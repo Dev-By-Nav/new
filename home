@@ -1,0 +1,150 @@
+import { useEffect, useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import Tile from "../Components/Tile";
+import CreateDeckModal from "../Components/CreateDeckModal";
+
+const API_URL = "http://127.0.0.1:5000";
+
+function Home() {
+  const [decks, setDecks] = useState([]);
+  const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  // Auth state (simple code login)
+  const [userCode, setUserCode] = useState(localStorage.getItem("user_code"));
+
+  // Modal open/close
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    loadDecks();
+    setUserCode(localStorage.getItem("user_code"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function loadDecks() {
+    try {
+      const res = await fetch(`${API_URL}/api/decks`);
+      if (!res.ok) {
+        setError(`Server error (${res.status}) while loading decks.`);
+        return;
+      }
+      const data = await res.json();
+      setDecks(data);
+      setError("");
+    } catch (err) {
+      console.error("Error loading decks:", err);
+      setError("Could not load decks from server.");
+    }
+  }
+
+  function handleLogout() {
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_code");
+    setUserCode(null);
+  }
+
+  function openModal() {
+    setError("");
+    setIsModalOpen(true);
+  }
+
+  function closeModal() {
+    setIsModalOpen(false);
+  }
+
+  // Called by CreateDeckModal after successful creation
+  function handleDeckCreated(newDeck) {
+    setDecks((prev) => [...prev, newDeck]);
+    setError("");
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-900 text-white p-6">
+      {/* HEADER + AUTH */}
+      <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
+        <h1 className="text-4xl font-bold">Flashcard Revision App</h1>
+
+        {userCode ? (
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-slate-300">
+              Logged in as <span className="font-mono">{userCode}</span>
+            </span>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-sm"
+            >
+              Log out
+            </button>
+          </div>
+        ) : (
+          <div className="flex gap-3">
+            <Link
+              to="/login"
+              className="px-3 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 transition text-sm"
+            >
+              Log in
+            </Link>
+            <Link
+              to="/signup"
+              className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 transition text-sm font-medium"
+            >
+              Sign up
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* ERROR (ONLY OUTSIDE MODAL) */}
+      {error && !isModalOpen && (
+        <div className="max-w-6xl mx-auto mb-4 px-4 py-2 rounded-xl bg-red-600/80 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="max-w-6xl mx-auto">
+        {/* TOP BAR */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={openModal}
+            className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 transition font-medium"
+          >
+            + Create New Deck
+          </button>
+        </div>
+
+        {/* DECK TILES */}
+        <div className="flex flex-wrap gap-4">
+          {decks.length === 0 && (
+            <p className="text-slate-400">No decks yet. Create one to start.</p>
+          )}
+
+          {decks.map((deck) => (
+            <Tile
+              key={deck.id}
+              title={deck.name}
+              subject={deck.subject}
+              examBoard={deck.exam_board}
+              yearGroup={deck.year_group}
+              onClickStudy={() =>
+                userCode ? navigate(`/study/${deck.id}`) : navigate("/login")
+              }
+              onClickEdit={() =>
+                userCode ? navigate(`/deck/${deck.id}`) : navigate("/login")
+              }
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* MODAL COMPONENT */}
+      <CreateDeckModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        onDeckCreated={handleDeckCreated}
+      />
+    </div>
+  );
+}
+
+export default Home;
