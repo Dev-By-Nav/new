@@ -1,0 +1,6 @@
+const filteredDecks = decks.filter((d) => {
+  if (filterSubject && d.subject !== filterSubject) return false;
+  if (filterExamBoard && d.exam_board !== filterExamBoard) return false;
+  if (filterYearGroup && d.year_group !== filterYearGroup) return false;
+  return true;
+});
