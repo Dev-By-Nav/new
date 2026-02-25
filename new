@@ -1,6 +1,19 @@
-const filteredDecks = decks.filter((d) => {
-  if (filterSubject && d.subject !== filterSubject) return false;
-  if (filterExamBoard && d.exam_board !== filterExamBoard) return false;
-  if (filterYearGroup && d.year_group !== filterYearGroup) return false;
-  return true;
-});
+useEffect(() => {
+  async function loadImage() {
+    try {
+      const response = await fetch(
+        `https://api.unsplash.com/photos/random?query=${title || "study"}&client_id=YOUR_KEY`
+      );
+
+      const data = await response.json();
+
+      if (data.urls && data.urls.small) {
+        setThumbUrl(data.urls.small);
+      }
+    } catch (error) {
+      // Fail silently
+    }
+  }
+
+  loadImage();
+}, [title]);
